@@ -54,7 +54,7 @@ class Agent(object):
         return action
 
     def store_experience(self, s, a, r, s_, d):
-        pass
+        self.memory.store_transition(s, a, r, s_, d)
 
     def update_target_network(self):
         if self.update_cntr % self.replace == 0:
@@ -94,7 +94,7 @@ class Agent(object):
                                dtype=torch.int64).to(self.q_eval.device)
         rewards = torch.tensor(rewards,
                                dtype=torch.float).to(self.q_eval.device)
-        dones = T.tensor(dones, dtype=torch.bool).to(self.q_eval.device)
+        dones = torch.tensor(dones, dtype=torch.bool).to(self.q_eval.device)
         new_candle_obs = torch.tensor(states_['candle'],
                                       dtype=torch.float).to(self.q_eval.device)
 

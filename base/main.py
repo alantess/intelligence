@@ -9,7 +9,7 @@ if __name__ == '__main__':
     lr = 1e-3
     epsilon = 1.0
     EPISODE = 1000
-    BATCH = 128
+    BATCH = 2
     capacity = 10000
     best_score = -np.inf
     running_avg, scores = [], []
@@ -35,6 +35,7 @@ if __name__ == '__main__':
             agent.store_experience(s, a, r, s_, done)
             if n_steps % 4 == 0:
                 print(info)
+                print('epsilon: ', agent.epsilon)
                 agent.learn()
             s = s_
             n_steps += 1
