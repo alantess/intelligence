@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     csv = "/media/alan/seagate/Downloads/Binance_LTCUSDT_minute_ds.csv"
-    lr = 1e-3
+    lr = 1e-4
     epsilon = 1
     EPISODE = 1000
     BATCH = 32
-    capacity = 10000
+    EPS_DEC = 9e-5
+    capacity = 15000
     best_score = -np.inf
     running_avg, scores = [], []
     n_steps = 0
@@ -19,7 +20,8 @@ if __name__ == '__main__':
 
     print("Executing")
     agent = Agent(lr, env.action_set.shape[0], env.candle_obs_space.shape,
-                  env.grammian_obs_space.shape, epsilon, BATCH, env, capacity)
+                  env.grammian_obs_space.shape, epsilon, BATCH, env, capacity,
+                  EPS_DEC)
 
     for i in range(EPISODE):
         score = 0
