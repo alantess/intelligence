@@ -9,7 +9,7 @@ if __name__ == '__main__':
     lr = 1e-3
     epsilon = 1
     EPISODE = 1000
-    BATCH = 2
+    BATCH = 32
     capacity = 10000
     best_score = -np.inf
     running_avg, scores = [], []
@@ -17,10 +17,10 @@ if __name__ == '__main__':
     env = Env(csv, 60)
     s = env.reset()
 
+    print("Executing")
     agent = Agent(lr, env.action_set.shape[0], env.candle_obs_space.shape,
                   env.grammian_obs_space.shape, epsilon, BATCH, env, capacity)
 
-    print("Executing")
     for i in range(EPISODE):
         score = 0
         start = time.time()
@@ -35,7 +35,7 @@ if __name__ == '__main__':
             agent.store_experience(s, a, r, s_, done)
             if n_steps % 4 == 0:
                 print(info)
-                print('epsilon: ', agent.epsilon)
+                print(f'epsilon: {agent.epsilon:.6f}')
                 agent.learn()
             s = s_
             n_steps += 1

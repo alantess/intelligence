@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from memory.memory import ReplayMemory
 from .network import DDQN
+from torch.cuda.amp import autocast
 
 
 class Agent(object):
@@ -14,7 +15,7 @@ class Agent(object):
                  batch_size,
                  env,
                  capacity=100000,
-                 eps_dec=4.5e-7,
+                 eps_dec=4.5e-6,
                  fc1_dims=256,
                  fc2_dims=256,
                  replace=1000,
@@ -30,7 +31,6 @@ class Agent(object):
         self.n_actions = n_actions
         self.batch_size = batch_size
         self.update_cntr = 0
-
         # Evaluate Network
         self.q_eval = DDQN(lr, n_actions, 'eval', fc1_dims, fc2_dims)
         # Training Networking
@@ -45,9 +45,9 @@ class Agent(object):
             gaf_obs = torch.tensor([obs['gaf']],
                                    dtype=torch.float).to(self.q_eval.device)
 
-            # with torch.cuda.amp.autocast():
-            actions = self.q_train.forward(candle_obs, gaf_obs)
-            action = torch.argmax(actions).item()
+            with autocast():
+                actions = self.q_train.forward(candle_obs, gaf_obs)
+                action = torch.argmax(actions).item()
         else:
             action = self.env.action_space.sample()
 
@@ -107,18 +107,22 @@ class Agent(object):
         self.update_target_network()
         indices = np.arange(self.batch_size)
 
-        q_pred = self.q_train.forward(candle_obs, gaf_obs)[indices, actions]
-        q_next = self.q_eval.forward(new_candle_obs, new_gaf_obs)
-        q_eval = self.q_eval.forward(new_candle_obs, new_gaf_obs)
+        with autocast():
+            q_pred = self.q_train.forward(candle_obs, gaf_obs)[indices,
+                                                               actions]
+            q_next = self.q_eval.forward(new_candle_obs, new_gaf_obs)
+            q_eval = self.q_train.forward(new_candle_obs, new_gaf_obs)
 
-        max_actions = torch.argmax(q_eval, dim=1)
-        q_next[dones] = 0.0
+            max_actions = torch.argmax(q_eval, dim=1)
+            q_next[dones] = 0.0
 
-        y = rewards + self.gamma * q_next[indices, max_actions]
+            y = rewards + self.gamma * q_next[indices, max_actions]
 
-        loss = self.q_train.loss(y, q_pred)
-        loss.backward()
+            loss = self.q_train.loss(y, q_pred)
 
-        self.q_train.optimizer.step()
+        self.scaler.scale(loss).backward()
+        self.scaler.step(self.q_train.optimizer)
+        self.scaler.update()
+
         self.update_cntr += 1
         self.decrement_epsilon()
