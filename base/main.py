@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     csv = "/media/alan/seagate/Downloads/Binance_LTCUSDT_minute_ds.csv"
     lr = 1e-3
-    epsilon = 1.0
+    epsilon = 1
     EPISODE = 1000
     BATCH = 2
     capacity = 10000

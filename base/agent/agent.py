@@ -35,7 +35,7 @@ class Agent(object):
         self.q_eval = DDQN(lr, n_actions, 'eval', fc1_dims, fc2_dims)
         # Training Networking
 
-        self.q_train = DDQN(lr, n_actions, 'trian', fc1_dims, fc2_dims)
+        self.q_train = DDQN(lr, n_actions, 'train', fc1_dims, fc2_dims)
         self.count_params()
 
     def choose_action(self, obs):
@@ -85,8 +85,8 @@ class Agent(object):
         states, actions, rewards, states_, dones = self.memory.sample_buffer(
             self.batch_size)
 
-        candle_obs = torch.tensor(states['candle'],
-                                  dtype=torch.float).to(self.q_eval.device)
+        candle_obs = torch.tensor(states['candle'], dtype=torch.float).to(
+            self.q_eval.device).permute(0, 3, 1, 2)
 
         gaf_obs = torch.tensor(states['gaf'],
                                dtype=torch.float).to(self.q_eval.device)
@@ -95,8 +95,8 @@ class Agent(object):
         rewards = torch.tensor(rewards,
                                dtype=torch.float).to(self.q_eval.device)
         dones = torch.tensor(dones, dtype=torch.bool).to(self.q_eval.device)
-        new_candle_obs = torch.tensor(states_['candle'],
-                                      dtype=torch.float).to(self.q_eval.device)
+        new_candle_obs = torch.tensor(states_['candle'], dtype=torch.float).to(
+            self.q_eval.device).permute(0, 3, 1, 2)
 
         new_gaf_obs = torch.tensor(states_['gaf'],
                                    dtype=torch.float).to(self.q_eval.device)
@@ -105,14 +105,16 @@ class Agent(object):
             p.grad = None
 
         self.update_target_network()
+        indices = np.arange(self.batch_size)
 
-        q_pred = self.q_train.forward(candle_obs, gaf_obs)
+        q_pred = self.q_train.forward(candle_obs, gaf_obs)[indices, actions]
         q_next = self.q_eval.forward(new_candle_obs, new_gaf_obs)
         q_eval = self.q_eval.forward(new_candle_obs, new_gaf_obs)
 
         max_actions = torch.argmax(q_eval, dim=1)
         q_next[dones] = 0.0
-        y = rewards + self.gamma * q_next[max_actions]
+
+        y = rewards + self.gamma * q_next[indices, max_actions]
 
         loss = self.q_train.loss(y, q_pred)
         loss.backward()

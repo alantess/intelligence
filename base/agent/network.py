@@ -25,7 +25,7 @@ class DDQN(nn.Module):
                                       nn.MaxPool2d(2), nn.Conv2d(32, 64, 3, 2),
                                       nn.ReLU())
 
-        self.fc1 = nn.Linear(128, fc1_dims)
+        self.fc1 = nn.Linear(640, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.out = nn.Linear(fc2_dims, n_actions)
         self.normalize = transforms.Compose([
@@ -43,7 +43,7 @@ class DDQN(nn.Module):
         candle = self.normalize(candle)
         gaf = self.gaf_conv(gaf)
         candle = self.candle_conv(candle)
-        x = torch.cat([candle.view(-1), gaf.view(-1)], dim=0)
+        x = torch.cat([candle.flatten(1), gaf.flatten(1)], dim=1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         q = self.out(x)
