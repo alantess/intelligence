@@ -51,8 +51,8 @@ if __name__ == '__main__':
     batch_size = 16
     eps = 1.0
     eps_dec = 3.5e-6
-    capacity = 10000
-    device = torch.device('cpu')
+    capacity = 1000
+    device = torch.device('cuda')
 
     model = MULTIDQN(lr=0.001, input_dims=channels, n_actions=n_actions)
     model.share_memory()
