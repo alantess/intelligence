@@ -8,7 +8,7 @@ if __name__ == '__main__':
     lr = 1e-4
     epsilon = 1
     EPISODE = 1000
-    BATCH = 32
+    BATCH = 16
     EPS_DEC = 8.5e-4
     capacity = 16000
     best_score = -np.inf
