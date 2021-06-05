@@ -1,6 +1,6 @@
 from common.memory.replay_v2 import ReplayBuffer
+from torch.cuda.amp import autocast, GradScaler
 import torch
-from torch import optim
 from torchvision import transforms
 import numpy as np
 from network import MULTIDQN
@@ -9,6 +9,7 @@ from network import MULTIDQN
 class Agent():
     def __init__(self,
                  global_model,
+                 optimizer,
                  lr,
                  channels,
                  n_actions,
@@ -25,6 +26,7 @@ class Agent():
         np.random.seed(1337)
         self.device = device
         self.epsilon = epsilon
+        self.scaler = GradScaler()
         self.eps_dec = eps_dec
         self.env = env
         self.score = 0
@@ -35,18 +37,19 @@ class Agent():
         self.dqn = MULTIDQN(lr, channels, n_actions)
         self.loss = torch.nn.MSELoss()
         self.memory = ReplayBuffer(capacity, img_size)
-        self.optimizer = optim.Adam(self.dqn.parameters(), lr=lr)
         self.name = "Agent[" + str(name) + "]"
         self.transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Resize((img_size, img_size))])
         self.global_model.to(self.device)
         self.dqn.to(self.device)
+        self.optimizer = optimizer
 
     def choose_action(self, obs):
         if np.random.random() > self.epsilon:
             obs = self.transform(obs).unsqueeze(0).to(self.device)
-            actions = self.global_model(obs).argmax(1)
+            with autocast():
+                actions = self.global_model(obs).argmax(1)
             action = actions.detach().item()
         else:
             action = self.env.action_space.sample()
@@ -61,15 +64,12 @@ class Agent():
                                                self.global_model.parameters()):
             global_params.grad = local_params
 
-        self.dqn.load_state_dict(self.global_model.state_dict())
+        # self.dqn.load_state_dict(self.global_model.state_dict())
 
     def decrement_eps(self):
-        self.epsilon -= self.eps_dec if self.epsilon > 0 else 0
+        self.epsilon -= self.eps_dec if self.epsilon > 0.01 else 0.01
 
-    def update_score(self, reward, best_score):
-        self.score += reward
-
-    def learn(self, ):
+    def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
         for p in self.global_model.parameters():
@@ -86,11 +86,13 @@ class Agent():
         states_ = states_.to(self.device)
         dones = dones.to(self.device)
 
-        q_target = self.global_model(states)[indices, actions]
-        q_pred = self.dqn(states_).argmax(dim=1)
-        q_pred[dones] = 0.0
-        y = rewards + self.gamma * q_pred
-        loss = self.loss(y, q_target)
-        loss.backward()
-        self.optimizer.step()
+        with autocast():
+            q_target = self.global_model(states)[indices, actions]
+            q_pred = self.dqn(states_).argmax(dim=1)
+            q_pred[dones] = 0.0
+            y = rewards + self.gamma * q_pred
+            loss = self.loss(y, q_target)
+        self.scaler.scale(loss).backward()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
         self.decrement_eps()

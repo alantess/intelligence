@@ -1,7 +1,36 @@
 import os
 import torch
-from torch import nn
+from torch import nn, optim
 import torch.nn.functional as F
+
+
+class SharedAdam(optim.Adam):
+    def __init__(self,
+                 params,
+                 lr,
+                 betas=(0.9, 0.99),
+                 eps=1e-8,
+                 weight_decay=0):
+        super(SharedAdam, self).__init__(params,
+                                         lr=lr,
+                                         betas=betas,
+                                         eps=eps,
+                                         weight_decay=weight_decay)
+
+        for group in self.param_groups:
+            for p in group['params']:
+                state = self.state[p]
+                state['step'] = 0
+
+                # Exponential moving average of gradient values
+                state['exp_avg'] = torch.zeros_like(
+                    p, memory_format=torch.preserve_format)
+                # Exponential moving average of squared gradient values
+                state['exp_avg_sq'] = torch.zeros_like(
+                    p, memory_format=torch.preserve_format)
+
+                state['exp_avg'].share_memory_()
+                state['exp_avg_sq'].share_memory_()
 
 
 class MULTIDQN(nn.Module):
