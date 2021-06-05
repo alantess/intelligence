@@ -15,6 +15,8 @@ env = gym.make('SpaceInvaders-v0')
 
 def run(agent, track_score):
     cur_step = 0
+
+    scores = []
     EPISODES = 2000
     for epi in range(EPISODES):
         start_time = time()
@@ -37,10 +39,14 @@ def run(agent, track_score):
         print(
             f"Episode({epi}) {agent.name}: SCORE: {score:.2f} Epsilon: {agent.epsilon:.4f} Time: {time() - start_time:.3f}"
         )
-        if score > track_score.value:
-            track_score.value = int(score)
-            agent.update_global_network()
-            print(f"{agent.name} - BEST SCORE: {track_score.value}")
+        scores.append(score)
+        if (epi + 1) % 25 == 0:
+            avg = int(np.mean(scores))
+            scores = []
+            if avg > track_score.value:
+                track_score.value = avg
+                agent.update_global_network()
+                print(f"{agent.name} - BEST SCORE: {track_score.value}")
 
 
 if __name__ == '__main__':
