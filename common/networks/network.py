@@ -16,7 +16,7 @@ class QVectNet(nn.Module):
                  network_name='agent.pt',
                  chkpt_dir='models/'):
         super(QVectNet, self).__init__()
-        self.chkpt_dir = chkpt_dir
+        self.chkpt = chkpt_dir
         self.file = os.path.join(chkpt_dir, network_name)
         self.fc1 = nn.Linear(input_dims[0], fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
@@ -51,7 +51,7 @@ class QConvNet(nn.Module):
         super(QConvNet, self).__init__()
         self.chkpt = chkpt_dir
         self.file = os.path.join(chkpt_dir, network_name)
-        self.conv1 = nn.Conv2d(input_dims[0], 32, 8, stride=4)
+        self.conv1 = nn.Conv2d(input_dims[2], 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
 
@@ -70,7 +70,7 @@ class QConvNet(nn.Module):
         conv2 = F.relu(self.conv2(conv1))
         conv3 = F.relu(self.conv3(conv2))
         # conv3 shape is BS x n_filters x H x W
-        conv_state = conv3.view(conv3.size()[0], -1)
+        conv_state = conv3.flatten(1)
         # conv_state shape is BS x (n_filters * H * W)
         flat1 = F.relu(self.fc1(conv_state))
         actions = F.relu(self.fc2(flat1))
@@ -79,7 +79,7 @@ class QConvNet(nn.Module):
         return actions
 
     def calculate_conv_output_dims(self, input_dims):
-        state = torch.zeros(1, *input_dims)
+        state = torch.zeros(1, *input_dims).permute(0, 3, 1, 2)
         dims = self.conv1(state)
         dims = self.conv2(dims)
         dims = self.conv3(dims)

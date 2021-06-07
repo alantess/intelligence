@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from common.memory.replay import ReplayBuffer
-from common.networks.network import QVectNet
+from common.networks.network import *
 
 
 class Agent:
@@ -17,7 +17,8 @@ class Agent:
                  eps_dec=4.5e-6,
                  gamma=0.99,
                  eps_min=0.01,
-                 replace=1000):
+                 replace=1000,
+                 img_mode=True):
         self.epsilon = epsilon
         self.gamma = gamma
         self.indices = np.arange(batch_size)
@@ -26,17 +27,30 @@ class Agent:
         self.batch_size = batch_size
         self.eps_min = eps_min
         self.env = env
+        self.img_mode = img_mode
+        if self.img_mode:
+            print("Image Agent Activated.")
+            self.q_eval = QConvNet(lr,
+                                   input_dims,
+                                   n_actions,
+                                   network_name='q_eval_img.pt')
+            self.q_next = QConvNet(lr,
+                                   input_dims,
+                                   n_actions,
+                                   network_name='q_next_img.pt')
+
+        else:
+            print('Vector Agent Activated.')
+            self.q_eval = QVectNet(lr,
+                                   input_dims,
+                                   n_actions,
+                                   network_name='q_eval_vect.pt')
+            self.q_next = QVectNet(lr,
+                                   input_dims,
+                                   n_actions,
+                                   network_name='q_next_vect.pt')
+
         self.memory = ReplayBuffer(capacity, input_dims)
-
-        self.q_eval = QVectNet(lr,
-                               input_dims,
-                               n_actions,
-                               network_name='q_eval.pt')
-        self.q_next = QVectNet(lr,
-                               input_dims,
-                               n_actions,
-                               network_name='q_next.pt')
-
         self.learn_step_cntr = 0
         self.device = device
 
@@ -45,7 +59,10 @@ class Agent:
 
     def choose_action(self, obs):
         if np.random.random() > self.epsilon:
+            if self.img_mode:
+                obs = obs.reshape(3, 210, 160)
             obs = torch.tensor([obs], dtype=torch.float32).to(self.device)
+
             actions = self.q_eval(obs)
             action = torch.argmax(actions, dim=1).item()
         else:
@@ -63,6 +80,10 @@ class Agent:
         r = torch.tensor(r).to(self.device)
         s_ = torch.tensor(s_).to(self.device)
         d = torch.tensor(d).to(self.device)
+
+        if self.img_mode:
+            s = s.permute(0, 3, 1, 2)
+            s_ = s_.permute(0, 3, 1, 2)
 
         return s, a, r, s_, d
 

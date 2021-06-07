@@ -14,6 +14,7 @@ def run(agent, env, n_epsidoes):
         state = env.reset()
         score = 0
         while not done:
+            env.render()
             action = agent.choose_action(state)
             state_, reward, done, _ = env.step(action)
             score += reward
@@ -31,3 +32,5 @@ def run(agent, env, n_epsidoes):
             if avg > best:
                 best = avg
                 agent.save()
+
+    env.close()
