@@ -11,9 +11,9 @@ if __name__ == '__main__':
     batch_size = 32
     n_actions = env.action_space.n
     lr = 1e-4
-    capacity = 1000
+    capacity = 15000
     episodes = 7500
-    EPS = 0.01
+    EPS = 1.0
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
     ddqn_agent = Agent(lr, input_dims, n_actions, batch_size, capacity, env,
