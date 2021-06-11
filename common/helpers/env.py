@@ -14,7 +14,7 @@ class Env(object):
         s = env.reset()
         done = False
         while not done:
-            a = env.actions_space.sample()
+            a = env.action_space.sample()
             s_, reward, done, _ = env.step(a)
             s = s_
     """
@@ -22,7 +22,7 @@ class Env(object):
             self,
             csv="/media/alan/seagate/Downloads/Binance_LTCUSDT_minute_ds.csv",
             n_actions=3,
-            stop_loss=0.8,
+            stop_loss=0.7,
             time_inc=1):
         self.csv = csv
         self.cols = 0
@@ -30,7 +30,7 @@ class Env(object):
         self.time_inc = time_inc
         self.stop_loss = stop_loss
         self.action_set = np.arange(n_actions)
-        self.actions_space = spaces.Discrete(len(self.action_set))
+        self.action_space = spaces.Discrete(len(self.action_set))
         self.unscaled_df = None
         self.scaler = preprocessing.StandardScaler()
         self.df = None
@@ -81,7 +81,7 @@ class Env(object):
         if cur_holdings < self.stop_loss * self.starting_amount:
             done = True
         else:
-            done = (self.time_inc <= self.n_steps - self.time_inc)
+            done = (self.time_inc >= self.n_steps - self.time_inc)
 
         info = {'btc': self.crypto_wallet, 'usdt': self.usdt_wallet}
 
