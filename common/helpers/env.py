@@ -39,7 +39,7 @@ class Env(object):
         self.crypto_wallet = None
         self.n_steps = None
         self.reward_dec = 1.0
-        self.reward_sub = 0.99e-3
+        self.reward_sub = 4.5e-3
         self.cur_step = 0
         self.starting_amount = 0
         self._load()
@@ -81,7 +81,7 @@ class Env(object):
         if cur_holdings < self.stop_loss * self.starting_amount:
             done = True
         else:
-            done = (self.time_inc >= self.n_steps - self.time_inc)
+            done = (self.time_inc >= self.n_steps - (self.time_inc + 5))
 
         info = {'btc': self.crypto_wallet, 'usdt': self.usdt_wallet}
 
@@ -120,6 +120,7 @@ class Env(object):
             else:
                 return
 
+    @property
     def _get_holdings(self):
         return self.crypto_wallet + self.usdt_wallet
 

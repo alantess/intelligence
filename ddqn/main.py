@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, '..')
 from common.helpers.run import run
 from common.helpers.env import Env
@@ -16,6 +17,7 @@ if __name__ == '__main__':
     capacity = 15000
     episodes = 7500
     EPS = 1.0
+    EPS_DEC = 8e-7
     torch.cuda.empty_cache()
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -27,6 +29,7 @@ if __name__ == '__main__':
                        env,
                        device,
                        EPS,
+                       EPS_DEC,
                        img_mode=False)
 
     # ddqn_agent.load()
